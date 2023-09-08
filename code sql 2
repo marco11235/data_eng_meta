@@ -1,0 +1,116 @@
+use littlelemondb;
+select * from orders;
+create view OrdersView as
+select order_id,cost,quantity from orders where quantity>2;
+select o.order_id,o.cost,c.customer_id,c.full_name,m.menu_name,i.coursers,i.starters from orders as o
+inner join customers as c
+on o.customer_id=c.customer_id
+inner join menus as m
+on o.menu_id=m.menu_id
+inner join item as i
+on i.menu_item_id=m.menu_item_id;
+select menu_name from menus 
+join orders
+where orders.order_id=
+(select order_id from orders where quantity>2);
+create procedure GetMaxQuantity ()
+select max(quantity) from orders;
+call GetMaxQuantity();
+prepare GetOrderDetail  from
+'select order_id, cost, quantity 
+from orders where order_id=?;';
+set @id= 1;
+execute GetOrderDetail using @id;
+DELIMITER //
+create procedure CancelOrder(IN id int)
+begin
+if exists(select 1 from orders where order_id=id)
+then
+delete from orders where order_id=id;
+select concat("Order ", id ,'is delated') as Confirmation;
+else 
+select concat("Order ", id ,'is not exist') as Response;
+end if;
+end //
+DELIMITER;
+call CancelOrder(1);
+
+delimiter //
+create procedure CheckBooking (IN book_date date, IN table_no int) 
+begin 
+if exists(select 1 from bookings where booking_date=book_date  and table_number= table_no)
+then 
+select concat("Table " ,table_no,'is booked succesifully') as 'Booking status';
+else 
+select concat("Table " ,table_no,'is already booked ') as 'Booking status';
+end if;
+end //
+delimiter ;
+
+delimiter //
+create procedure AddValidBooking(in booking_Date date , in Table_no int , in Customer int)
+begin
+start transaction;
+select booking_id into @id from bookings order by booking_id desc limit 1;
+set @id=@id+1;
+if exists(select 1 from bookings where(booking_date=booking_Date and table_number=Table_no))
+then
+select concat ("table", Table_no, "is already booked") as 'Booking status';
+rollback;
+else
+insert into bookings (booking_date, table_number, booking_id ,customer_id)
+values (@id, booking_Date, Table_no, Customer);
+commit;
+select concat("Booking for table " , Table_no, " is successful.") AS `Booking status`; 
+end if;
+end //
+
+delimiter ;
+
+
+delimiter //
+create procedure CancelBooking (IN booking_ID INT)
+begin 
+start transaction;
+if not exists(select 1 from bookings where booking_id=booking_ID)
+then 
+select concat ("Booking " , booking_ID, " does not exist.") AS `Message`;
+rollback;
+else
+delete from bookings where booking_id = booking_ID;
+commit;
+end if;
+end //
+
+
+delimiter ;
+
+
+delimiter //
+create procedure AddValidBooking(in booking_Date date , in Table_no int , in Customer int)
+begin
+start transaction;
+select booking_id into @id from bookings order by booking_id desc limit 1;
+set @id=@id+1;
+if exists(select 1 from bookings where(booking_date=booking_Date and table_number=Table_no))
+then
+select concat ("table", Table_no, "is already booked") as 'Booking status';
+rollback;
+else
+insert into bookings (booking_date, table_number, booking_id ,customer_id)
+values (@id, booking_Date, Table_no, Customer);
+commit;
+select concat("Booking for table " , Table_no, " is successful.") AS `Booking status`; 
+end if;
+end //
+
+delimiter ;
+
+
+
+
+
+
+
+
+
